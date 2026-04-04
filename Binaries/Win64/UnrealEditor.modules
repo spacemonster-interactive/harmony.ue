@@ -1,0 +1,9 @@
+{
+	"BuildId": "47537391",
+	"Modules": 
+	{
+		"Harmony": "UnrealEditor-Harmony.dll",
+		"HarmonyEditor": "UnrealEditor-HarmonyEditor.dll",
+		"HarmonyShaders": "UnrealEditor-HarmonyShaders.dll"
+	}
+}
