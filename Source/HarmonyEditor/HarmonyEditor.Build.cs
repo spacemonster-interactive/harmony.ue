@@ -19,15 +19,17 @@ public class HarmonyEditor : ModuleRules
                 "AssetTools",
                 "ContentBrowser",
                 "CoreUObject",
+                "DeveloperSettings",
                 "Engine",
                 "FileUtilities",
                 "Harmony",
+                "Json",
                 "Slate",
                 "SlateCore",
                 "ToolMenus",
                 "UnrealEd"
             });
 
-        AddEngineThirdPartyPrivateStaticDependencies(Target, "zlib");
+        AddEngineThirdPartyPrivateStaticDependencies(Target, "zlib", "FreeImage");
     }
 }
