@@ -14,7 +14,7 @@ Support for additional platforms and older engine versions may be added in futur
 
 ## Installing the Plugin
 
-Harmony is installed manually — it is not distributed through the Unreal Marketplace.
+The plugin is installed manually — it is not distributed through the Unreal Marketplace.
 
 1. Download or clone the **Harmony** plugin folder
 2. Locate your Unreal project's root directory (the folder containing your `.uproject` file)
@@ -42,7 +42,7 @@ MyProject/
 2. Go to *Edit → Plugins → Rendering* and confirm **Harmony** is enabled
 3. Restart the editor if prompted
 
-Once active, Harmony registers its importers automatically. You can immediately drag supported splat files into the Content Browser.
+Once active, the importers register automatically. You can immediately drag supported splat files into the Content Browser.
 
 ---
 

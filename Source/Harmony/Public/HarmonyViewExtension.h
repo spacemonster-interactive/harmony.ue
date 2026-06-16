@@ -16,6 +16,8 @@ public:
     FHarmonyViewExtension(const FAutoRegister& AutoRegister);
     virtual ~FHarmonyViewExtension() override;
 
+	void ReleaseSplatRenderResources_GameThread();
+
 	//~ Begin FSceneViewExtensionBase Interface
 	virtual bool IsActiveThisFrame_Internal(const FSceneViewExtensionContext& Context) const override;
 	virtual void SetupViewFamily(FSceneViewFamily& InViewFamily) override {}
@@ -42,6 +44,7 @@ private:
 	FScreenPassTexture RenderCustomTonemapPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
 	FScreenPassTexture RenderTonemapReplacementPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
 	FScreenPassTexture RenderForegroundSplatsPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
+	void ReleaseSplatRenderResources_RenderThread();
 
 	struct FRenderThreadState
 	{
@@ -70,10 +73,15 @@ private:
 			EPixelFormat BackgroundDirectCoverageRequestedFormat = PF_Unknown;
 			bool bBackgroundDirectCoverageRequestedSRGB = false;
 			FIntPoint BackgroundDirectCoverageRequestedExtent = FIntPoint::ZeroValue;
+			bool bBackgroundDirectCoverageTargetValid = false;
+			FIntRect BackgroundDirectCoverageViewRect = FIntRect(0, 0, 0, 0);
 			FTextureRHIRef ForegroundSplatsTargetRHI;
 			EPixelFormat ForegroundSplatsRequestedFormat = PF_Unknown;
 			bool bForegroundSplatsRequestedSRGB = false;
 			FIntPoint ForegroundSplatsRequestedExtent = FIntPoint::ZeroValue;
+			FTextureRHIRef AutoExposureMeterMaskTargetRHI;
+			FIntPoint AutoExposureMeterMaskRequestedExtent = FIntPoint::ZeroValue;
+			bool bAutoExposureMeterMaskActive = false;
 		FTextureRHIRef SceneCoverageHistoryTextures[2];
 		FIntPoint SceneCoverageHistoryExtent = FIntPoint::ZeroValue;
 		FIntRect SceneCoverageHistoryViewRect = FIntRect(0, 0, 0, 0);
@@ -86,6 +94,8 @@ private:
 		uint32 NumExpandedSplats = 0;
 		uint32 NumCompressedSplats = 0;
 		uint32 NumInstances = 0;
+		uint32 NumCullVolumes = 0;
+		uint32 NumPreprocessCullVolumes = 0;
 		uint32 SortCount = 0;
 		uint32 PreparedSortedValueBufferIndex = 0;
 		bool bPreparedForDirectDraw = false;
@@ -114,6 +124,8 @@ private:
 		bool bForegroundSplatsTargetValid = false;
 		bool bReuseForegroundSplatsTargetThisFrame = false;
 		uint32 ForegroundSplatsTargetDrawConfigHash = 0u;
+		bool bAnyComponentWritesDepthToScene = true;
+		bool bAnyComponentSkipsDepthToScene = false;
 		FBufferRHIRef SplatPosRadiusBufferRHI;
 		FShaderResourceViewRHIRef SplatPosRadiusSRV;
 		FBufferRHIRef SplatOutputIndexBufferRHI;
@@ -124,6 +136,12 @@ private:
 		FShaderResourceViewRHIRef SplatInstanceTransformSRV;
 		FBufferRHIRef SplatInstanceSettingsBufferRHI;
 		FShaderResourceViewRHIRef SplatInstanceSettingsSRV;
+		FBufferRHIRef SplatInstanceFadeSettingsBufferRHI;
+		FShaderResourceViewRHIRef SplatInstanceFadeSettingsSRV;
+		FBufferRHIRef CullVolumeDataBufferRHI;
+		FShaderResourceViewRHIRef CullVolumeDataSRV;
+		FBufferRHIRef PreprocessCullVolumeDataBufferRHI;
+		FShaderResourceViewRHIRef PreprocessCullVolumeDataSRV;
 		FBufferRHIRef SplatColorBufferRHI;
 		FShaderResourceViewRHIRef SplatColorSRV;
 		FBufferRHIRef SplatCovarianceBufferRHI;
@@ -191,9 +209,8 @@ private:
 		TStrongObjectPtr<UTextureRenderTarget2D> BackgroundAverageDepthFallbackTarget_GameThread;
 		TStrongObjectPtr<UTextureRenderTarget2D> BackgroundAmbiguityResolveFallbackTarget_GameThread;
 		TStrongObjectPtr<UTextureRenderTarget2D> BackgroundDirectCoverageFallbackTarget_GameThread;
-		TStrongObjectPtr<UTextureRenderTarget2D> ForegroundSplatsFallbackTarget_GameThread;
+	TStrongObjectPtr<UTextureRenderTarget2D> ForegroundSplatsFallbackTarget_GameThread;
+	TStrongObjectPtr<UTextureRenderTarget2D> AutoExposureMeterMaskTarget_GameThread;
 	uint32 CachedSceneTopologyHash_GameThread = 0u;
 	uint32 CachedSceneTransformHash_GameThread = 0u;
-	bool bForcedEyeAdaptationQuality_GameThread = false;
-	int32 CachedEyeAdaptationQuality_GameThread = 0;
 };

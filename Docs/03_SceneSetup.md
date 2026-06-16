@@ -1,10 +1,10 @@
 # Scene Setup
 
-Once a splat file has been imported as a `UHarmonyDataAsset`, place it in a level using a `AHarmonyActor`.
+Once a splat file has been imported as a `UHarmonyDataAsset`, place it in a level using an `AHarmonyActor`.
 
 ---
 
-## Adding a Harmony Actor
+## Adding an Actor
 
 1. In the **Content Browser**, locate the `UHarmonyDataAsset` you imported
 2. Either:
@@ -16,7 +16,7 @@ Once a splat file has been imported as a `UHarmonyDataAsset`, place it in a leve
 
 ## Assigning the Data Asset
 
-In the `AHarmonyActor` Details panel, set the **Data Asset** property to the `UHarmonyDataAsset` you want to display. Each actor displays one asset.
+In the `AHarmonyActor` Details panel, set the **Data Asset** property to the `UHarmonyDataAsset` you want to display. Each actor renders one asset.
 
 ---
 
