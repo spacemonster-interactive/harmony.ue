@@ -2,14 +2,14 @@
 
 Gaussian Splat rendering plugin for Unreal Engine 5.
 
-Harmony imports 3D Gaussian Splat captures from common authoring tools, stores them as `UHarmonyDataAsset` assets, and renders them in the editor and at runtime using the UE5 RHI.
+Imports 3D Gaussian Splat captures from common authoring tools, stores them as `UHarmonyDataAsset` assets, and renders them in the editor and at runtime using the UE5 RHI.
 
 
 ---
 
 > **Pre-release — Alpha**
 >
-> Harmony is in active development and has not yet reached a stable release. APIs, asset formats, actor properties, and project settings are all subject to change — some significantly — between versions. Do not build production pipelines against the current interface without expecting to update them as the plugin evolves.
+> The plugin is in active development and has not yet reached a stable release. APIs, asset formats, actor properties, and project settings are all subject to change — some significantly — between versions. Do not build production pipelines against the current interface without expecting to update them as the plugin evolves.
 
 ---
 
@@ -62,11 +62,16 @@ The live demos and sample project include Gaussian Splat assets that are not par
 
 ## Supported Formats
 
-| Extension | Format | Imports As |
-|---|---|---|
-| `.ply` | Gaussian Splat PLY | Expanded |
-| `.splat` | Packed binary splat | Expanded |
-| `.spz` | Niantic SPZ (gzip) | Expanded |
-| `.npz` | NumPy archive | Compressed |
+| Extension | Format |
+|---|---|
+| `.ply` | Gaussian Splat PLY |
+| `.spz` | Niantic SPZ (gzip) |
+| `.sog` | PlayCanvas SOG |
+| `.splat` | Packed binary splat |
+| `.ksplat` | GaussianSplats3D KSPLAT |
+| `.npz` | NumPy archive |
 
-See [Importing](Docs/02_Importing.md) for full details on each format.
+Import format support and compression behavior are documented separately:
+
+- [Importing](Docs/02_Importing.md) — supported source formats and import workflow
+- [Compression](Docs/05_Compression.md) — Expanded vs Compressed assets and conversion workflow

@@ -1,52 +1,54 @@
 # Importing Gaussian Splats
 
-Harmony supports four Gaussian Splat file formats. All formats import into the same asset type/ `UHarmonyDataAsset` | but differ in what data they carry and how it is stored internally.
+The plugin supports six Gaussian Splat source formats. All of them import into the same asset type, `UHarmonyDataAsset`.
 
 ---
 
 ## How to Import
 
-1. Open the **Content Browser** in Unreal Editor
-2. Drag your splat file directly onto the Content Browser, or use **Import** from the toolbar
-3. Harmony automatically detects the format from the file extension
-4. A `UHarmonyDataAsset` is created in the current folder
-
-No import dialog or settings are required. The asset is ready to use immediately after import.
+1. Open the **Content Browser** in Unreal Editor.
+2. Drag a supported splat file into the Content Browser, or use **Import** from the toolbar.
+3. The importer detects the format from the file extension.
+4. A `UHarmonyDataAsset` is created in the current folder.
 
 ---
 
 ## Supported Formats
 
-### `.ply` | Gaussian Splat PLY
+| Extension | Format | Notes |
+|---|---|---|
+| `.ply` | Gaussian Splat PLY | Common authoring/export format |
+| `.spz` | Niantic SPZ | Quantized source format |
+| `.sog` | PlayCanvas SOG | Lossy source format based on packed image data |
+| `.splat` | Packed binary splat | DC colour only, no higher-order SH |
+| `.ksplat` | GaussianSplats3D KSPLAT | Viewer-native binary cache format |
+| `.npz` | NumPy archive | May use sparse geometry/feature indexing |
 
-The most common authoring export format. Standard PLY binary with per-point properties for position, scale, rotation, opacity, and spherical harmonic colour coefficients.
+---
 
-- Imports as **Expanded** encoding (full float32 arrays)
-- Supports all SH degrees (DC only through degree 3)
-- Scale is expected as log-encoded values in the PLY; Harmony decodes these automatically
+## Compression On Import
 
-### `.splat` | Packed Binary
+Import file format support and compression are separate concerns.
 
-A compact binary format used by several web-based Gaussian Splat viewers. Each record is 32 bytes containing packed position, scale, rotation, and colour.
+Import-time compression is controlled by:
 
-- Imports as **Expanded** encoding
-- Colour is stored as a pre-activated value (no sigmoid needed); Harmony converts to SH DC internally
-- No higher-order SH coefficients, DC colour only
+`Edit -> Project Settings -> Plugins -> Harmony Import -> Import Compressed`
 
-### `.spz` | Niantic SPZ
+`Import Compressed` is enabled by default.
 
-A gzip-compressed binary format developed by Niantic. Contains position, rotation, scale, and optional SH coefficients in a compact quantized layout that Harmony decompresses on import.
+Behavior:
 
-- Imports as **Expanded** encoding
-- Supports optional higher-order SH up to degree 3
+- `.ply`, `.spz`, `.sog`, `.splat`, and `.ksplat` import as Expanded data first, then auto-compress before save if `Import Compressed` is enabled
+- `.npz` imports directly as Compressed data
 
-### `.npz` | NumPy Archive
+If `Import Compressed` is disabled, expanded-source formats stay Expanded on import.
 
-A NumPy `.npz` file produced by training pipelines that output Harmony-compatible compressed arrays directly. Unlike the other formats, NPZ files arrive pre-quantized.
+### Notes on `.npz`
 
-- Imports as **Compressed** encoding, no conversion step required
-- Supports **sparse indexing**: geometry and feature arrays may be shared across fewer unique entries than total points (`CompressedGeometryCount < NumPoints` or `CompressedFeatureCount < NumPoints`)
-- Sparse assets cannot be decompressed back to Expanded format in-place; re-import from the source `.ply` or `.spz` if an Expanded version is needed
+`NPZ` files arrive pre-quantized and are imported directly into the compressed layout.
+
+- They may use **sparse indexing**, where geometry or feature arrays are shared across fewer unique entries than total points.
+- Sparse compressed assets cannot be expanded back into a standard Expanded asset through the normal editor workflow. Re-import from the original source file if you need an Expanded version.
 
 ---
 
@@ -55,8 +57,10 @@ A NumPy `.npz` file produced by training pipelines that output Harmony-compatibl
 Once imported, the asset appears in the Content Browser with a thumbnail preview. You can:
 
 - Drag it into the level to place it as an `AHarmonyActor`
-- Right-click it to **Convert to Compressed** (if it imported as Expanded) see [Compression](Compression.md)
-- Hover over it in the Content Browser to see the **Disk Size** and point count in the tooltip
+- Right-click it to **Convert to Compressed** if it is currently Expanded. See [Compression](05_Compression.md)
+- Hover over it in the Content Browser to see point count, encoding, and estimated disk size
+
+If you need Expanded imports for testing or inspection, disable `Import Compressed` in **Project Settings** before importing.
 
 ---
 
@@ -67,8 +71,10 @@ Each format is handled by a dedicated importer class in `Source/HarmonyEditor/Pr
 | File | Format |
 |---|---|
 | `HarmonyPlyImporter.cpp` | `.ply` |
-| `HarmonySplatImporter.cpp` | `.splat` |
 | `HarmonySpzImporter.cpp` | `.spz` |
+| `HarmonySogImporter.cpp` | `.sog` |
+| `HarmonySplatImporter.cpp` | `.splat` |
+| `HarmonyKsplatImporter.cpp` | `.ksplat` |
 | `HarmonyNpzImporter.cpp` | `.npz` |
 
-Each importer exposes a single public function in the `Harmony::Editor` namespace and fills a `FHarmonyRawData` struct. `UHarmonyPlyFactory` dispatches to the correct importer based on file extension.
+Each importer fills a `FHarmonyRawData` struct. `UHarmonyPlyFactory` dispatches to the correct importer based on file extension, then applies the current import settings before saving the final `UHarmonyDataAsset`.
