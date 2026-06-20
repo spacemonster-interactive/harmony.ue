@@ -16,9 +16,9 @@ enum class EHarmonyTonemapMaskMode : uint8
 UENUM(BlueprintType)
 enum class EHarmonyTonemappingMode : uint8
 {
-    Harmony UMETA(DisplayName="Harmony"),
-    SplatPreInverse UMETA(DisplayName="Splat Pre-Inverse"),
-    None UMETA(DisplayName="None")
+    EarlyMasked UMETA(DisplayName="Early Masked"),
+    TonemapCompensation UMETA(DisplayName="Tonemap Compensation"),
+    StockTonemapping UMETA(DisplayName="Stock Tonemapping")
 };
 
 UENUM(BlueprintType)
@@ -59,8 +59,8 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Proxy", meta=(ConsoleVariable="r.Harmony.Feature.Compose.ThroughTransparency.AmbiguityResolve", DisplayName="Resolve Proxy Depth Ambiguity", DisplayPriority="1", EditCondition="bUseProxyRT && (!bEnableBackgroundForegroundSplit || bDrawBackgroundLayer)", EditConditionHides, ToolTip="Enable the extra ambiguity-resolve path for proxy background composition. This improves mixed edge pixels where average proxy depth is ambiguous, but adds an extra resolve pass and can reduce performance."))
     bool bEnableBackgroundAmbiguityResolve = true;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(DisplayName="Tonemapping Mode", DisplayPriority="0", ToolTip="Choose how Harmony interacts with tonemapping. Harmony replaces the tonemapper. Splat Pre-Inverse keeps UE's tonemapper and pre-expands splat color before it enters scene color. None leaves UE tonemapping untouched."))
-    EHarmonyTonemappingMode TonemappingMode = EHarmonyTonemappingMode::Harmony;
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(DisplayName="Tonemapping Mode", DisplayPriority="0", ToolTip="Choose how Harmony interacts with tonemapping. Early Masked runs Harmony's masked tonemap pass earlier in the pipeline and excludes splat pixels. Tonemap Compensation keeps UE's tonemapper and pre-expands splat color before it enters scene color. Stock Tonemapping leaves UE tonemapping unchanged."))
+    EHarmonyTonemappingMode TonemappingMode = EHarmonyTonemappingMode::EarlyMasked;
 
     UPROPERTY(Config, EditAnywhere, Category="Culling|Frustum", meta=(ConsoleVariable="r.Harmony.Feature.Preprocess.AdaptiveFrustumPadding", DisplayName="Use Distance-Based Frustum Padding", DisplayPriority="0", ToolTip="Use distance-based frustum padding in culling. Near and far padding values are blended between the near and far distance thresholds."))
     bool bAdaptivePreprocessFrustumPadding = false;
@@ -155,10 +155,10 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Tonemap.EnableSceneTint", EditCondition="false", EditConditionHides, HideEditConditionToggle))
     bool bTonemapEnableSceneTint = true;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Tonemap.CompositeForeground", DisplayName="Composite Foreground Splats", DisplayPriority="1", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony && bEnableBackgroundForegroundSplit", EditConditionHides, ToolTip="Composite the foreground splat layer at the end of the plugin tonemap pass."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Tonemap.CompositeForeground", DisplayName="Composite Foreground Splats", DisplayPriority="1", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked && bEnableBackgroundForegroundSplit", EditConditionHides, ToolTip="Composite the foreground splat layer at the end of the plugin tonemap pass."))
     bool bTonemapCompositeForeground = true;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Tonemap.MaskMode", DisplayName="Tonemap Mask Mode", DisplayPriority="2", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, ToolTip="Controls which scene-coverage channel the plugin tonemap pass uses for its selective tonemap mask."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Tonemap.MaskMode", DisplayName="Tonemap Mask Mode", DisplayPriority="2", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ToolTip="Controls which scene-coverage channel the plugin tonemap pass uses for its selective tonemap mask."))
     EHarmonyTonemapMaskMode TonemapMaskMode = EHarmonyTonemapMaskMode::OpaqueMinusTranslucency;
 
     UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.BloomStrength", EditCondition="false", EditConditionHides, HideEditConditionToggle))
@@ -166,46 +166,46 @@ public:
 
     // Keep the replacement tonemap neutral by default so opaque UE geometry tracks the stock
     // tonemapper as closely as this plugin-visible path allows. Artistic offsets remain opt-in.
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.ExposureCompensationStops", DisplayName="Exposure Compensation", DisplayPriority="3", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, UIMin="-8.0", UIMax="8.0", ToolTip="Optional exposure offset, in stops, applied in the plugin tonemap pass. Keep this at 0 for the closest match to the stock UE tonemapper."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.ExposureCompensationStops", DisplayName="Exposure Compensation", DisplayPriority="3", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, UIMin="-8.0", UIMax="8.0", ToolTip="Optional exposure offset, in stops, applied in the plugin tonemap pass. Keep this at 0 for the closest match to the stock UE tonemapper."))
     float TonemapExposureCompensationStops = 0.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.ShadowLift", DisplayPriority="4", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="0.25", ToolTip="Optional shadow lift applied before tonemapping. Keep this at 0 for the closest match to the stock UE tonemapper."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.ShadowLift", DisplayPriority="4", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="0.25", ToolTip="Optional shadow lift applied before tonemapping. Keep this at 0 for the closest match to the stock UE tonemapper."))
     float TonemapShadowLift = 0.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.ShadowLiftPivot", DisplayPriority="5", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, ClampMin="0.0", UIMin="0.0", ClampMax="1.0", UIMax="1.0", ToolTip="Compressed luminance pivot where shadow lift starts fading out. Only used when Shadow Lift is above 0."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.ShadowLiftPivot", DisplayPriority="5", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ClampMin="0.0", UIMin="0.0", ClampMax="1.0", UIMax="1.0", ToolTip="Compressed luminance pivot where shadow lift starts fading out. Only used when Shadow Lift is above 0."))
     float TonemapShadowLiftPivot = 0.15f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.ShadowLiftSoftness", DisplayPriority="6", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, ClampMin="0.0", UIMin="0.0", ClampMax="1.0", UIMax="1.0", ToolTip="Soft transition width around the shadow-lift pivot in compressed luminance space. Only used when Shadow Lift is above 0."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Tonemap.ShadowLiftSoftness", DisplayPriority="6", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ClampMin="0.0", UIMin="0.0", ClampMax="1.0", UIMax="1.0", ToolTip="Soft transition width around the shadow-lift pivot in compressed luminance space. Only used when Shadow Lift is above 0."))
     float TonemapShadowLiftSoftness = 0.25f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Background.InverseTonemapScale", DisplayName="Splat Pre-Inverse Scale", DisplayPriority="7", EditCondition="TonemappingMode == EHarmonyTonemappingMode::SplatPreInverse", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="2.0", ToolTip="Overall multiplier applied after the Splat Pre-Inverse expansion. Lower values reduce the brightness of splats before the stock UE tonemapper sees them."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Background.InverseTonemapScale", DisplayName="Tonemap Compensation Scale", DisplayPriority="7", EditCondition="TonemappingMode == EHarmonyTonemappingMode::TonemapCompensation", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="2.0", ToolTip="Overall multiplier applied after the Tonemap Compensation expansion. Lower values reduce the brightness of splats before the stock UE tonemapper sees them."))
     float SplatPreInverseScale = 1.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Background.InverseTonemapGamma", DisplayName="Splat Pre-Inverse Gamma", DisplayPriority="8", EditCondition="TonemappingMode == EHarmonyTonemappingMode::SplatPreInverse", EditConditionHides, ClampMin="0.25", UIMin="0.25", UIMax="2.5", ToolTip="Power curve applied after inverse tonemap expansion. Values above 1 compress the lifted result and usually reduce the washed-out midtone look."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Background.InverseTonemapGamma", DisplayName="Tonemap Compensation Gamma", DisplayPriority="8", EditCondition="TonemappingMode == EHarmonyTonemappingMode::TonemapCompensation", EditConditionHides, ClampMin="0.25", UIMin="0.25", UIMax="2.5", ToolTip="Power curve applied after inverse tonemap expansion. Values above 1 compress the lifted result and usually reduce the washed-out midtone look."))
     float SplatPreInverseGamma = 1.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Background.InverseTonemapSaturationScale", DisplayName="Splat Pre-Inverse Saturation", DisplayPriority="9", EditCondition="TonemappingMode == EHarmonyTonemappingMode::SplatPreInverse", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="2.0", ToolTip="Post-inverse saturation trim for Splat Pre-Inverse. Lower values pull the expanded splat color back toward luma before UE's stock tonemapper runs."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Tuning.Background.InverseTonemapSaturationScale", DisplayName="Tonemap Compensation Saturation", DisplayPriority="9", EditCondition="TonemappingMode == EHarmonyTonemappingMode::TonemapCompensation", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="2.0", ToolTip="Post-inverse saturation trim for Tonemap Compensation. Lower values pull the expanded splat color back toward luma before UE's stock tonemapper runs."))
     float SplatPreInverseSaturationScale = 1.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.DepthDistance", DisplayName="Opaque Depth Distance", DisplayPriority="0", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, ClampMin="0.001", UIMin="0.001", UIMax="100000.0", ToolTip="Depth threshold used when building the scene-coverage mask for selective tonemapping."))
-    float ComposeMaskDepthDistance = 100000.0f;
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.DepthDistance", DisplayName="Opaque Depth Distance", DisplayPriority="0", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ClampMin="0.001", UIMin="100000.0", UIMax="1000000000.0", ToolTip="Maximum scene depth treated as opaque coverage when building the selective tonemap mask. Keep this high enough to cover distant world geometry; lowering it can leave far geometry outside Early Masked tonemapping."))
+    float ComposeMaskDepthDistance = 1000000000.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.TransparentPow", DisplayName="Translucency Suppression Power", DisplayPriority="1", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="32.0", ToolTip="Exponent applied to separate translucency background visibility when building the scene-coverage mask."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.TransparentPow", DisplayName="Translucency Suppression Power", DisplayPriority="1", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="32.0", ToolTip="Exponent applied to separate translucency background visibility when building the scene-coverage mask."))
     float ComposeMaskTransparentPow = 15.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Mask.CrossBlur", DisplayName="Feather Mask Edges", DisplayPriority="2", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, ToolTip="Enable edge feathering during scene-coverage mask generation."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Mask.CrossBlur", DisplayName="Feather Mask Edges", DisplayPriority="2", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ToolTip="Enable edge feathering during scene-coverage mask generation."))
     bool bComposeMaskCrossBlur = true;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.CrossBlurPx", DisplayName="Feather Radius (px)", DisplayPriority="3", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony && bComposeMaskCrossBlur", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="8.0", ToolTip="Edge feather radius in pixels for scene-coverage mask generation."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.CrossBlurPx", DisplayName="Feather Radius (px)", DisplayPriority="3", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked && bComposeMaskCrossBlur", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="8.0", ToolTip="Edge feather radius in pixels for scene-coverage mask generation."))
     float ComposeMaskCrossBlurPx = 1.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Mask.SceneCoverageHistory.Enable", DisplayName="Use Mask History", DisplayPriority="4", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony", EditConditionHides, ToolTip="Enable temporal reprojection history for the scene-coverage mask."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Mask.SceneCoverageHistory.Enable", DisplayName="Use Mask History", DisplayPriority="4", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ToolTip="Enable temporal reprojection history for the scene-coverage mask."))
     bool bComposeMaskSceneCoverageHistory = true;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.SceneCoverageHistory.Weight", DisplayName="Mask History Weight", DisplayPriority="5", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony && bComposeMaskSceneCoverageHistory", EditConditionHides, ClampMin="0.0", UIMin="0.0", ClampMax="1.0", UIMax="1.0", ToolTip="Previous-frame blend weight for scene-coverage history on edge pixels."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.SceneCoverageHistory.Weight", DisplayName="Mask History Weight", DisplayPriority="5", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked && bComposeMaskSceneCoverageHistory", EditConditionHides, ClampMin="0.0", UIMin="0.0", ClampMax="1.0", UIMax="1.0", ToolTip="Previous-frame blend weight for scene-coverage history on edge pixels."))
     float ComposeMaskSceneCoverageHistoryWeight = 0.9f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.SceneCoverageHistory.VelocityFalloff", DisplayName="Mask History Velocity Falloff", DisplayPriority="6", EditCondition="TonemappingMode == EHarmonyTonemappingMode::Harmony && bComposeMaskSceneCoverageHistory", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="16.0", ToolTip="Velocity falloff distance in pixels for scene-coverage history. History blend weight decays exponentially as pixel motion increases (exp(-velocity / falloff)). Lower values suppress history more aggressively during camera movement. 0 disables velocity attenuation."))
+    UPROPERTY(Config, EditAnywhere, Category="Tonemapping|Masking", meta=(ConsoleVariable="r.Harmony.Tuning.Compose.Mask.SceneCoverageHistory.VelocityFalloff", DisplayName="Mask History Velocity Falloff", DisplayPriority="6", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked && bComposeMaskSceneCoverageHistory", EditConditionHides, ClampMin="0.0", UIMin="0.0", UIMax="16.0", ToolTip="Velocity falloff distance in pixels for scene-coverage history. History blend weight decays exponentially as pixel motion increases (exp(-velocity / falloff)). Lower values suppress history more aggressively during camera movement. 0 disables velocity attenuation."))
     float ComposeMaskSceneCoverageHistoryVelocityFalloff = 2.0f;
 
 };
