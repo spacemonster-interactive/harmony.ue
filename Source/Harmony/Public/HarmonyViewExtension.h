@@ -6,8 +6,8 @@
 #include "ScreenPass.h"
 #include "SceneViewExtension.h"
 #include "UObject/StrongObjectPtr.h"
+#include "Engine/TextureRenderTarget2D.h"
 
-class UTextureRenderTarget2D;
 class FPostOpaqueRenderParameters;
 
 class HARMONY_API FHarmonyViewExtension : public FSceneViewExtensionBase
