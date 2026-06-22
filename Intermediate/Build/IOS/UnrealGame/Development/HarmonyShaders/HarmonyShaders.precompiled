@@ -1,8 +1,0 @@
-{
-	"OutputFiles": [
-		"../../../arm64/UnrealGame/Development/HarmonyShaders/HarmonyShaderSource.cpp.o",
-		"../../../arm64/UnrealGame/Development/HarmonyShaders/HarmonyShadersModule.cpp.o",
-		"../../../arm64/UnrealGame/Development/HarmonyShaders/HarmonyShaderSource.cpp.o",
-		"../../../arm64/UnrealGame/Development/HarmonyShaders/HarmonyShadersModule.cpp.o"
-	]
-}

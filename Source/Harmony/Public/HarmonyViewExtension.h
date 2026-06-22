@@ -1,12 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "RenderGraphFwd.h"
 #include "RHIResources.h"
 #include "ScreenPass.h"
 #include "SceneViewExtension.h"
 #include "UObject/StrongObjectPtr.h"
-#include "Engine/TextureRenderTarget2D.h"
 
 class FPostOpaqueRenderParameters;
 

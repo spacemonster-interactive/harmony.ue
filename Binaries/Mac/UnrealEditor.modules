@@ -1,9 +1,0 @@
-{
-	"BuildId": "47537391",
-	"Modules": 
-	{
-		"Harmony": "UnrealEditor-Harmony.dylib",
-		"HarmonyEditor": "UnrealEditor-HarmonyEditor.dylib",
-		"HarmonyShaders": "UnrealEditor-HarmonyShaders.dylib"
-	}
-}
