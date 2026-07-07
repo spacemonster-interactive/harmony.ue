@@ -10,6 +10,15 @@
 
 class FPostOpaqueRenderParameters;
 
+// The two stages of the splat composite. Early runs at post-opaque (before translucency) and handles
+// pixels without opaque coverage; Late runs after Harmony's custom tonemap (both hook BeforeDOF, so
+// splats still receive DOF) and composites the splat contribution over opaque-covered pixels.
+enum class EHarmonySplatStage : uint8
+{
+	Early,
+	Late
+};
+
 class HARMONY_API FHarmonyViewExtension : public FSceneViewExtensionBase
 {
 public:
@@ -32,18 +41,27 @@ private:
 	bool IsDirectDrawPreparedForView_RenderThread(const FSceneView& View) const;
 	void EnsureDirectDrawPreparedForView_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View);
 	void PrepareDirectDraw_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View);
-	void PublishUserSceneTextures_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View);
-	void RenderBackgroundSplatsPostOpaque_RenderThread(FPostOpaqueRenderParameters& Parameters);
-	FScreenPassTexture RenderBackgroundSplatsCommon_RenderThread(
+	// Early splat stage: hooked at post-opaque; draws splats where the scene has no opaque coverage.
+	void RenderEarlySplatsPass_RenderThread(FPostOpaqueRenderParameters& Parameters);
+	FScreenPassTexture RenderSplatsCommon_RenderThread(
 		FRDGBuilder& GraphBuilder,
 		const FSceneView& View,
 		FScreenPassTexture SceneColor,
 		FScreenPassRenderTarget Output,
-		TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTexturesUniform);
+		TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTexturesUniform,
+		EHarmonySplatStage Stage = EHarmonySplatStage::Early,
+		// When true, the draw target is a dedicated offscreen splat buffer (not scene color), so the
+		// draw writes premultiplied color AND coverage to alpha (CW_RGBA) instead of preserving scene
+		// alpha — required so the later upscale/composite can occlude the scene with the coverage.
+		bool bRenderIntoDedicatedSplatBuffer = false);
 	FScreenPassTexture RenderSceneCoverageMaskVisualizationPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
+	FScreenPassTexture RenderSplatOverdrawVisualizationPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
+	FScreenPassTexture RenderSeparateTranslucencyVisualizationPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
 	FScreenPassTexture RenderCustomTonemapPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
 	FScreenPassTexture RenderTonemapReplacementPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
-	FScreenPassTexture RenderForegroundSplatsPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
+	// Late splat stage: composites the splat contribution over opaque-covered pixels after the early
+	// custom tonemap, so the tonemapper runs on a splat-free scene. Handles direct draw and proxy.
+	FScreenPassTexture RenderLateSplatsPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& Inputs);
 	void ReleaseSplatRenderResources_RenderThread();
 
 	struct FRenderThreadState
@@ -75,10 +93,6 @@ private:
 			FIntPoint BackgroundDirectCoverageRequestedExtent = FIntPoint::ZeroValue;
 			bool bBackgroundDirectCoverageTargetValid = false;
 			FIntRect BackgroundDirectCoverageViewRect = FIntRect(0, 0, 0, 0);
-			FTextureRHIRef ForegroundSplatsTargetRHI;
-			EPixelFormat ForegroundSplatsRequestedFormat = PF_Unknown;
-			bool bForegroundSplatsRequestedSRGB = false;
-			FIntPoint ForegroundSplatsRequestedExtent = FIntPoint::ZeroValue;
 			FTextureRHIRef AutoExposureMeterMaskTargetRHI;
 			FIntPoint AutoExposureMeterMaskRequestedExtent = FIntPoint::ZeroValue;
 			bool bAutoExposureMeterMaskActive = false;
@@ -88,6 +102,24 @@ private:
 		EPixelFormat SceneCoverageHistoryFormat = PF_Unknown;
 		int32 SceneCoverageHistoryReadIndex = 0;
 		bool bSceneCoverageHistoryValid = false;
+		FRDGTextureRef OpaqueSceneDepthTexture = nullptr;
+		FIntRect OpaqueSceneDepthViewRect = FIntRect(0, 0, 0, 0);
+		UPTRINT OpaqueSceneDepthViewKey = 0u;
+		FRDGTextureRef SplatOverdrawCounterTexture = nullptr;
+		FIntRect SplatOverdrawCounterViewRect = FIntRect(0, 0, 0, 0);
+		UPTRINT SplatOverdrawCounterViewKey = 0u;
+		// Render-resolution viewport/extent captured by the early (pre-TSR) splat stage, so the late
+		// (post-TSR) stage can rasterize its splats at the same resolution into an offscreen buffer and
+		// upscale — otherwise the render-res early splats seam against native-output-res late splats
+		// under TSR upscaling. Captured every frame the early stage runs.
+		FIntRect SplatRenderViewRect = FIntRect(0, 0, 0, 0);
+		FIntPoint SplatRenderExtent = FIntPoint::ZeroValue;
+		// Per-frame opaque tile classification (bit0=tile has opaque, bit1=tile has non-opaque),
+		// built at post-opaque from pristine scene depth; consumed by the direct background draws
+		// for pixel-exact splat culling. RDG resource: only valid within the frame's graph.
+		FRDGBufferSRVRef OpaqueTileMaskSRV = nullptr;
+		FIntPoint OpaqueTileMaskTiles = FIntPoint::ZeroValue;
+		UPTRINT OpaqueTileMaskViewKey = 0u;
 		float SplatPixelRadius = 1.0f;
 		uint32 SHDegree = 3;
 		uint32 NumSplats = 0;
@@ -99,7 +131,6 @@ private:
 		uint32 SortCount = 0;
 		uint32 PreparedSortedValueBufferIndex = 0;
 		bool bPreparedForDirectDraw = false;
-		bool bUsedLayerPartitionForDirectDraw = false;
 		uint64 PreparedDirectDrawFrameCounter = 0u;
 		UPTRINT PreparedDirectDrawViewKey = 0u;
 		bool bEnableDirectDrawViewCaching = true;
@@ -121,9 +152,6 @@ private:
 		bool bBackgroundAmbiguityResolveTargetValid = false;
 		bool bReuseBackgroundAmbiguityResolveTargetThisFrame = false;
 		uint32 BackgroundAmbiguityResolveTargetDrawConfigHash = 0u;
-		bool bForegroundSplatsTargetValid = false;
-		bool bReuseForegroundSplatsTargetThisFrame = false;
-		uint32 ForegroundSplatsTargetDrawConfigHash = 0u;
 		bool bAnyComponentWritesDepthToScene = true;
 		bool bAnyComponentSkipsDepthToScene = false;
 		FBufferRHIRef SplatPosRadiusBufferRHI;
@@ -183,22 +211,6 @@ private:
 		FUnorderedAccessViewRHIRef RadixDispatchArgsUAV;
 		FBufferRHIRef DrawIndexedArgsBufferRHI;
 		FUnorderedAccessViewRHIRef DrawIndexedArgsUAV;
-		FBufferRHIRef LayerGroupCountBufferRHI;
-		FUnorderedAccessViewRHIRef LayerGroupCountUAV;
-		FBufferRHIRef LayerPartitionDispatchArgsBufferRHI;
-		FUnorderedAccessViewRHIRef LayerPartitionDispatchArgsUAV;
-		FBufferRHIRef LayerGroupOffsetBufferRHI;
-		FUnorderedAccessViewRHIRef LayerGroupOffsetUAV;
-		FBufferRHIRef BackgroundSortedIndicesBufferRHI;
-		FShaderResourceViewRHIRef BackgroundSortedIndicesSRV;
-		FUnorderedAccessViewRHIRef BackgroundSortedIndicesUAV;
-		FBufferRHIRef ForegroundSortedIndicesBufferRHI;
-		FShaderResourceViewRHIRef ForegroundSortedIndicesSRV;
-		FUnorderedAccessViewRHIRef ForegroundSortedIndicesUAV;
-		FBufferRHIRef BackgroundDrawIndexedArgsBufferRHI;
-		FUnorderedAccessViewRHIRef BackgroundDrawIndexedArgsUAV;
-		FBufferRHIRef ForegroundDrawIndexedArgsBufferRHI;
-		FUnorderedAccessViewRHIRef ForegroundDrawIndexedArgsUAV;
 		TArray<FCompressedDispatchSegment> CompressedDispatchSegments;
 	};
 
@@ -209,7 +221,6 @@ private:
 		TStrongObjectPtr<UTextureRenderTarget2D> BackgroundAverageDepthFallbackTarget_GameThread;
 		TStrongObjectPtr<UTextureRenderTarget2D> BackgroundAmbiguityResolveFallbackTarget_GameThread;
 		TStrongObjectPtr<UTextureRenderTarget2D> BackgroundDirectCoverageFallbackTarget_GameThread;
-	TStrongObjectPtr<UTextureRenderTarget2D> ForegroundSplatsFallbackTarget_GameThread;
 	TStrongObjectPtr<UTextureRenderTarget2D> AutoExposureMeterMaskTarget_GameThread;
 	uint32 CachedSceneTopologyHash_GameThread = 0u;
 	uint32 CachedSceneTransformHash_GameThread = 0u;

@@ -6,7 +6,7 @@
 
 namespace HarmonyDebug
 {
-	static constexpr TCHAR BackgroundProxyUserSceneTextureName[] = TEXT("HarmonyBackgroundProxy");
-	static constexpr TCHAR BackgroundAverageDepthProxyUserSceneTextureName[] = TEXT("HarmonyBackgroundAverageDepthProxy");
 	static constexpr TCHAR SceneCoverageMaskUserSceneTextureName[] = TEXT("HarmonySceneCoverageMask");
+	static constexpr TCHAR SplatOverdrawUserSceneTextureName[] = TEXT("HarmonySplatOverdraw");
+	static constexpr TCHAR SeparateTranslucencyUserSceneTextureName[] = TEXT("HarmonySeparateTranslucency");
 }

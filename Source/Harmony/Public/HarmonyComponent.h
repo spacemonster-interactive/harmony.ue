@@ -83,23 +83,8 @@ public:
     UPROPERTY(EditAnywhere, Category="Gaussian Splat", meta=(DisplayName="Depth Offset"))
     FHarmonyDepthOffsetSettings DepthOffsetSettings;
 
-    // View-space split depth from the world origin that divides background and foreground splats.
-    // Splats deeper than (world-origin view-depth + BackgroundForegroundDepthSplit) are assigned to the background layer.
-    UPROPERTY(EditAnywhere, Category="Gaussian Splat", meta=(UIMin="-10000.0", UIMax="10000.0"))
-    float BackgroundForegroundDepthSplit = -600.0f;
-
-    // When enabled, splats at or below BackgroundForegroundFloorSplitZ in world space are forced into the
-    // background layer regardless of their view-space depth relative to BackgroundForegroundDepthSplit.
-    UPROPERTY(EditAnywhere, Category="Gaussian Splat")
-    bool bUseBackgroundForegroundFloorSplit = false;
-
-    // World-space Z threshold used when bUseBackgroundForegroundFloorSplit is enabled. Any splat whose world Z is at or
-    // below this value is forced into the background layer.
-    UPROPERTY(EditAnywhere, Category="Gaussian Splat", meta=(EditCondition="bUseBackgroundForegroundFloorSplit", EditConditionHides, UIMin="-100000.0", UIMax="100000.0"))
-    float BackgroundForegroundFloorSplitZ = 0.0f;
-
     // Allows this component's background splats to contribute to Harmony's background depth estimate and SceneDepth write.
-    // This currently affects only the background/main layer because foreground splats are rendered later in the pipeline.
+    // This currently affects the main splat layer.
     UPROPERTY(EditAnywhere, Category="Gaussian Splat", meta=(DisplayName="Write Depth To Scene"))
     bool bWriteDepthToScene = true;
 

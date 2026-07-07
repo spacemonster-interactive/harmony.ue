@@ -21,13 +21,6 @@ enum class EHarmonyTonemappingMode : uint8
     StockTonemapping UMETA(DisplayName="Stock Tonemapping")
 };
 
-UENUM(BlueprintType)
-enum class EHarmonyBackgroundForegroundSplitMode : uint8
-{
-    WorldOrigin UMETA(DisplayName="World Origin"),
-    Camera UMETA(DisplayName="Camera")
-};
-
 UCLASS(Config=Engine, DefaultConfig, meta=(DisplayName="Harmony"))
 class HARMONY_API UHarmonySettings : public UDeveloperSettings
 {
@@ -47,7 +40,7 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="General")
     bool bEnabled = true;
 
-    UPROPERTY(Config, EditAnywhere, Category="Proxy", meta=(DisplayName="Use Proxy Render Targets", DisplayPriority="0", ToolTip="Render the background and foreground splat layers into offscreen runtime render targets, then composite those textures back into the scene. Disable to draw splats directly into scene color instead."))
+    UPROPERTY(Config, EditAnywhere, Category="Proxy", meta=(DisplayName="Use Proxy Render Targets", DisplayPriority="0", ToolTip="Render background splats into an offscreen runtime render target, then composite that texture back into the scene. Disable to draw splats directly into scene color instead."))
     bool bUseProxyRT = false;
 
     UPROPERTY(Config, EditAnywhere, Category="Draw|General", meta=(DisplayName="Splat Pixel Radius", DisplayPriority="0", ClampMin="0.0", UIMin="0.0", ClampMax="2.0", UIMax="2.0", ToolTip="Global pixel-radius scale applied before rasterization. Higher values make splats appear larger on screen."))
@@ -55,9 +48,6 @@ public:
 
     UPROPERTY(Config, EditAnywhere, Category="Performance", meta=(DisplayName="Reuse Static View Preprocess", DisplayPriority="1", ToolTip="Reuse preprocess and sort results when the camera view and relevant preprocess inputs are unchanged. Disable to force recompute every frame."))
     bool bEnableStaticViewPreprocessCache = true;
-
-    UPROPERTY(Config, EditAnywhere, Category="Proxy", meta=(ConsoleVariable="r.Harmony.Feature.Compose.ThroughTransparency.AmbiguityResolve", DisplayName="Resolve Proxy Depth Ambiguity", DisplayPriority="1", EditCondition="bUseProxyRT && (!bEnableBackgroundForegroundSplit || bDrawBackgroundLayer)", EditConditionHides, ToolTip="Enable the extra ambiguity-resolve path for proxy background composition. This improves mixed edge pixels where average proxy depth is ambiguous, but adds an extra resolve pass and can reduce performance."))
-    bool bEnableBackgroundAmbiguityResolve = true;
 
     UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(DisplayName="Tonemapping Mode", DisplayPriority="0", ToolTip="Choose how Harmony interacts with tonemapping. Early Masked runs Harmony's masked tonemap pass earlier in the pipeline and excludes splat pixels. Tonemap Compensation keeps UE's tonemapper and pre-expands splat color before it enters scene color. Stock Tonemapping leaves UE tonemapping unchanged."))
     EHarmonyTonemappingMode TonemappingMode = EHarmonyTonemappingMode::EarlyMasked;
@@ -104,24 +94,6 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Culling|Screen Size", meta=(ConsoleVariable="r.Harmony.Tuning.Preprocess.MinScreenRadiusPx", DisplayName="Min Screen Radius (px)", DisplayPriority="0", ClampMin="0.0", UIMin="0.0", UIMax="16.0", ToolTip="Cull splats when the projected max radius in pixels is below this threshold."))
     float PreprocessMinScreenRadiusPx = 0.0f;
 
-    UPROPERTY(Config, EditAnywhere, Category="Draw|Layers", meta=(ConsoleVariable="r.Harmony.Feature.Layers.Split", DisplayName="Foreground / Background Split", DisplayPriority="0", ToolTip="Split splats into background and foreground layers. Disable to render all splats in the background layer and skip the foreground layer entirely."))
-    bool bEnableBackgroundForegroundSplit = false;
-
-    UPROPERTY(Config, EditAnywhere, Category="Draw|Layers", meta=(ConsoleVariable="r.Harmony.Feature.Layers.SplitMode", DisplayName="Split Mode", DisplayPriority="1", EditCondition="bEnableBackgroundForegroundSplit", EditConditionHides, ToolTip="Choose whether the background/foreground split threshold is measured relative to the world origin or the current camera."))
-    EHarmonyBackgroundForegroundSplitMode BackgroundForegroundSplitMode = EHarmonyBackgroundForegroundSplitMode::WorldOrigin;
-
-    UPROPERTY(Config, EditAnywhere, Category="Draw|Layers", meta=(DisplayName="World Origin Split Offset", DisplayPriority="2", EditCondition="bEnableBackgroundForegroundSplit && BackgroundForegroundSplitMode == EHarmonyBackgroundForegroundSplitMode::WorldOrigin", EditConditionHides, UIMin="-10000.0", UIMax="10000.0", ToolTip="Global offset added to each component's background / foreground split threshold when Split Mode is World Origin."))
-    float WorldOriginBackgroundForegroundSplitOffset = 0.0f;
-
-    UPROPERTY(Config, EditAnywhere, Category="Draw|Layers", meta=(DisplayName="Camera Split Offset", DisplayPriority="3", EditCondition="bEnableBackgroundForegroundSplit && BackgroundForegroundSplitMode == EHarmonyBackgroundForegroundSplitMode::Camera", EditConditionHides, UIMin="-10000.0", UIMax="10000.0", ToolTip="Global offset added to each component's background / foreground split threshold when Split Mode is Camera."))
-    float CameraBackgroundForegroundSplitOffset = 0.0f;
-
-    UPROPERTY(Config, EditAnywhere, Category="Draw|Layers", meta=(ConsoleVariable="r.Harmony.Feature.Draw.Background", DisplayName="Draw Background Splats", DisplayPriority="4", EditCondition="bEnableBackgroundForegroundSplit", EditConditionHides, ToolTip="Render background splats in the fixed post-opaque background pass. Disable to skip background splat rendering entirely."))
-    bool bDrawBackgroundLayer = true;
-
-    UPROPERTY(Config, EditAnywhere, Category="Draw|Layers", meta=(ConsoleVariable="r.Harmony.Feature.Draw.Foreground", DisplayName="Draw Foreground Splats", DisplayPriority="5", EditCondition="bEnableBackgroundForegroundSplit", EditConditionHides, ToolTip="Render foreground splats in the fixed tonemap-stage foreground pass. Disable to skip foreground splat rendering entirely."))
-    bool bDrawForegroundLayer = true;
-
     UPROPERTY(Config, EditAnywhere, Category="Draw|Depth", meta=(ConsoleVariable="r.Harmony.Tuning.Draw.Background.SceneDepthCoverageThreshold", DisplayName="Depth Write Coverage Threshold", DisplayPriority="1", ClampMin="0.0", UIMin="0.0", ClampMax="1.0", UIMax="1.0", ToolTip="Minimum accumulated background splat coverage required before a pixel writes into SceneDepth for components with Write Depth To Scene enabled. Higher values reduce low-alpha tail contamination in depth-driven effects."))
     float BackgroundSceneDepthCoverageThreshold = 0.1f;
 
@@ -154,9 +126,6 @@ public:
 
     UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Tonemap.EnableSceneTint", EditCondition="false", EditConditionHides, HideEditConditionToggle))
     bool bTonemapEnableSceneTint = true;
-
-    UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Tonemap.CompositeForeground", DisplayName="Composite Foreground Splats", DisplayPriority="1", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked && bEnableBackgroundForegroundSplit", EditConditionHides, ToolTip="Composite the foreground splat layer at the end of the plugin tonemap pass."))
-    bool bTonemapCompositeForeground = true;
 
     UPROPERTY(Config, EditAnywhere, Category="Tonemapping", meta=(ConsoleVariable="r.Harmony.Feature.Compose.Tonemap.MaskMode", DisplayName="Tonemap Mask Mode", DisplayPriority="2", EditCondition="TonemappingMode == EHarmonyTonemappingMode::EarlyMasked", EditConditionHides, ToolTip="Controls which scene-coverage channel the plugin tonemap pass uses for its selective tonemap mask."))
     EHarmonyTonemapMaskMode TonemapMaskMode = EHarmonyTonemapMaskMode::OpaqueMinusTranslucency;

@@ -21,7 +21,6 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyPreprocessPassParams, )
     SHADER_PARAMETER(FVector3f, ViewForward)
     SHADER_PARAMETER(FVector2f, SplatViewportSize)
     SHADER_PARAMETER(FVector2f, Focal)
-    SHADER_PARAMETER(uint32, PreprocessLayerFilter)
     SHADER_PARAMETER(float, PreprocessFrustumPadding)
     SHADER_PARAMETER(uint32, PreprocessUseAdaptiveFrustumPadding)
     SHADER_PARAMETER(float, PreprocessNearFrustumPadding)
@@ -38,6 +37,7 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyPreprocessPassParams, )
     SHADER_PARAMETER(float, PreprocessMinScreenRadiusPx)
     SHADER_PARAMETER(float, SplatPixelRadius)
     SHADER_PARAMETER(float, KernelSize)
+    SHADER_PARAMETER(float, PreprocessOpacityCompensation)
     SHADER_PARAMETER(uint32, SHDegree)
     SHADER_PARAMETER(uint32, NumSourceSplats)
     SHADER_PARAMETER(uint32, MaxOutputSplats)
@@ -80,7 +80,6 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyPreprocessCompressedPassParams, )
     SHADER_PARAMETER(FVector3f, ViewForward)
     SHADER_PARAMETER(FVector2f, SplatViewportSize)
     SHADER_PARAMETER(FVector2f, Focal)
-    SHADER_PARAMETER(uint32, PreprocessLayerFilter)
     SHADER_PARAMETER(float, PreprocessFrustumPadding)
     SHADER_PARAMETER(uint32, PreprocessUseAdaptiveFrustumPadding)
     SHADER_PARAMETER(float, PreprocessNearFrustumPadding)
@@ -97,6 +96,7 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyPreprocessCompressedPassParams, )
     SHADER_PARAMETER(float, PreprocessMinScreenRadiusPx)
     SHADER_PARAMETER(float, SplatPixelRadius)
     SHADER_PARAMETER(float, KernelSize)
+    SHADER_PARAMETER(float, PreprocessOpacityCompensation)
     SHADER_PARAMETER(uint32, SHDegree)
     SHADER_PARAMETER(uint32, NumSourceSplats)
     SHADER_PARAMETER(uint32, MaxOutputSplats)
@@ -143,8 +143,10 @@ public:
 BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyInitSortPaddingPassParams, )
     SHADER_PARAMETER(uint32, NumSplats)
     SHADER_PARAMETER(uint32, SortCount)
+    SHADER_PARAMETER(uint32, PaddingMode)
     SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWSortKeys)
     SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWSortValues)
+    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWDrawIndexedArgs)
 END_SHADER_PARAMETER_STRUCT()
 
 class FHarmonyInitSortPaddingCS : public FGlobalShader
@@ -327,90 +329,6 @@ public:
     }
 };
 
-BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyLayerPartitionBuildDispatchArgsPassParams, )
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWDrawIndexedArgs)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWLayerPartitionDispatchArgs)
-END_SHADER_PARAMETER_STRUCT()
-
-class FHarmonyLayerPartitionBuildDispatchArgsCS : public FGlobalShader
-{
-public:
-    DECLARE_GLOBAL_SHADER(FHarmonyLayerPartitionBuildDispatchArgsCS);
-    using FParameters = FHarmonyLayerPartitionBuildDispatchArgsPassParams;
-    SHADER_USE_PARAMETER_STRUCT(FHarmonyLayerPartitionBuildDispatchArgsCS, FGlobalShader);
-
-    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-    {
-        return true;
-    }
-};
-
-BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyLayerPartitionCountPassParams, )
-    SHADER_PARAMETER(uint32, SortCount)
-    SHADER_PARAMETER_SRV(StructuredBuffer<float4>, PreprocessedSplats)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWSortedIndices)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWDrawIndexedArgs)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWLayerGroupCounts)
-END_SHADER_PARAMETER_STRUCT()
-
-class FHarmonyLayerPartitionCountCS : public FGlobalShader
-{
-public:
-    DECLARE_GLOBAL_SHADER(FHarmonyLayerPartitionCountCS);
-    using FParameters = FHarmonyLayerPartitionCountPassParams;
-    SHADER_USE_PARAMETER_STRUCT(FHarmonyLayerPartitionCountCS, FGlobalShader);
-
-    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-    {
-        return true;
-    }
-};
-
-BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyLayerPartitionPrefixPassParams, )
-    SHADER_PARAMETER(uint32, GroupCount)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWDrawIndexedArgs)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWLayerGroupCounts)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWLayerGroupOffsets)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWBackgroundDrawIndexedArgs)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWForegroundDrawIndexedArgs)
-END_SHADER_PARAMETER_STRUCT()
-
-class FHarmonyLayerPartitionPrefixCS : public FGlobalShader
-{
-public:
-    DECLARE_GLOBAL_SHADER(FHarmonyLayerPartitionPrefixCS);
-    using FParameters = FHarmonyLayerPartitionPrefixPassParams;
-    SHADER_USE_PARAMETER_STRUCT(FHarmonyLayerPartitionPrefixCS, FGlobalShader);
-
-    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-    {
-        return true;
-    }
-};
-
-BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyLayerPartitionScatterPassParams, )
-    SHADER_PARAMETER(uint32, SortCount)
-    SHADER_PARAMETER_SRV(StructuredBuffer<float4>, PreprocessedSplats)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWSortedIndices)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWDrawIndexedArgs)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWLayerGroupOffsets)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWBackgroundSortedIndices)
-    SHADER_PARAMETER_UAV(RWStructuredBuffer<uint>, RWForegroundSortedIndices)
-END_SHADER_PARAMETER_STRUCT()
-
-class FHarmonyLayerPartitionScatterCS : public FGlobalShader
-{
-public:
-    DECLARE_GLOBAL_SHADER(FHarmonyLayerPartitionScatterCS);
-    using FParameters = FHarmonyLayerPartitionScatterPassParams;
-    SHADER_USE_PARAMETER_STRUCT(FHarmonyLayerPartitionScatterCS, FGlobalShader);
-
-    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-    {
-        return true;
-    }
-};
-
 BEGIN_SHADER_PARAMETER_STRUCT(FTrianglePassParams, )
     SHADER_PARAMETER_STRUCT_REF(FViewUniformShaderParameters, View)
     SHADER_PARAMETER_RDG_UNIFORM_BUFFER(FSceneTextureUniformParameters, SceneTexturesStruct)
@@ -421,10 +339,10 @@ BEGIN_SHADER_PARAMETER_STRUCT(FTrianglePassParams, )
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeSceneInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeBackgroundSplatsInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, BackgroundDepthInput)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, OpaqueSceneDepthInput)
     SHADER_PARAMETER(FVector3f, CameraWorldPos)
     SHADER_PARAMETER(uint32, NumSplats)
     SHADER_PARAMETER(uint32, NumCullVolumes)
-    SHADER_PARAMETER(uint32, LayerSelect)
     SHADER_PARAMETER(uint32, EnableOpaqueDepthReject)
     SHADER_PARAMETER(uint32, UseBackgroundDepthComposeReject)
     SHADER_PARAMETER(uint32, UseBackgroundAmbiguityMask)
@@ -442,6 +360,7 @@ BEGIN_SHADER_PARAMETER_STRUCT(FTrianglePassParams, )
     SHADER_PARAMETER(float, OpaqueDepthRejectAdaptiveBand)
     SHADER_PARAMETER(float, OpaqueDepthRejectFeather)
     SHADER_PARAMETER(float, OpaquePresenceDepthDistance)
+    SHADER_PARAMETER(float, StageBoundaryFeatherPx)
     SHADER_PARAMETER(float, BackgroundDepthCoverageThreshold)
     SHADER_PARAMETER(float, BackgroundAmbiguityFrontAlphaFloor)
     SHADER_PARAMETER(float, BackgroundAmbiguityMinCoverageThreshold)
@@ -452,6 +371,9 @@ BEGIN_SHADER_PARAMETER_STRUCT(FTrianglePassParams, )
     SHADER_PARAMETER(float, InverseTonemapScale)
     SHADER_PARAMETER(float, InverseTonemapGamma)
     SHADER_PARAMETER(float, InverseTonemapSaturationScale)
+    SHADER_PARAMETER(float, DirectDrawColorGamma)
+    SHADER_PARAMETER(float, DirectDrawColorMultiplier)
+    SHADER_PARAMETER(uint32, DirectDrawDisableColorClamp)
     SHADER_PARAMETER(float, FilmSlope)
     SHADER_PARAMETER(float, FilmToe)
     SHADER_PARAMETER(float, FilmShoulder)
@@ -471,12 +393,18 @@ BEGIN_SHADER_PARAMETER_STRUCT(FTrianglePassParams, )
     SHADER_PARAMETER_SRV(StructuredBuffer<float4>, CullVolumeData)
     SHADER_PARAMETER_SRV(StructuredBuffer<uint>, SortedIndices)
     SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<uint>, BackgroundAmbiguityRect)
+    SHADER_PARAMETER(uint32, UseOpaqueTileMaskCull)
+    SHADER_PARAMETER(uint32, TileMaskTilesX)
+    SHADER_PARAMETER(uint32, TileMaskTilesY)
+    SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<uint>, OpaqueTileMask)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeBackgroundSplatsTexture)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, BackgroundDepthTexture)
+    SHADER_PARAMETER_RDG_TEXTURE(Texture2D, OpaqueSceneDepthTexture)
     SHADER_PARAMETER_RDG_TEXTURE(Texture3D, LumBilateralGrid)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, BlurredLogLum)
     SHADER_PARAMETER_SAMPLER(SamplerState, ComposeLinearClampSampler)
     SHADER_PARAMETER_SAMPLER(SamplerState, BackgroundDepthPointClampSampler)
+    SHADER_PARAMETER_SAMPLER(SamplerState, OpaqueSceneDepthPointClampSampler)
     RENDER_TARGET_BINDING_SLOTS()
 END_SHADER_PARAMETER_STRUCT()
 
@@ -500,13 +428,43 @@ public:
     using FParameters = FTrianglePassParams;
     class FWriteSplatAverageDepth : SHADER_PERMUTATION_BOOL("WRITE_SPLAT_AVERAGE_DEPTH");
     class FWriteSplatCoverage : SHADER_PERMUTATION_BOOL("WRITE_SPLAT_COVERAGE");
-    using FPermutationDomain = TShaderPermutationDomain<FWriteSplatAverageDepth, FWriteSplatCoverage>;
+    // R1 proxy hybrid: when set, the PS discards fragments with no close opaque UE geometry (so the
+    // hybrid direct draw only fills the pixels the compose skipped). Compile-time so it cannot affect
+    // the normal direct draw, which uses the permutation with this off.
+    class FHybridOpaqueOnly : SHADER_PERMUTATION_BOOL("HYBRID_OPAQUE_ONLY");
+    // Two-pass split: when set, the PS discards fragments with close opaque UE geometry so the early
+    // pre-translucency direct draw only fills the no-opaque region.
+    class FNoOpaqueOnly : SHADER_PERMUTATION_BOOL("NO_OPAQUE_ONLY");
+    class FUseOpaqueDepthSnapshot : SHADER_PERMUTATION_BOOL("TRIANGLE_USE_OPAQUE_DEPTH_SNAPSHOT");
+    // Debug: emit 1.0 per surviving (blending) fragment with additive blend into a counter target for
+    // the splat-overdraw heatmap visualization. Shares all VS/discard logic with the normal draw; only
+    // the output line differs. Compiled standalone (all other flags off) so it adds just one permutation.
+    class FWriteOverdraw : SHADER_PERMUTATION_BOOL("WRITE_OVERDRAW");
+    using FPermutationDomain = TShaderPermutationDomain<FWriteSplatAverageDepth, FWriteSplatCoverage, FHybridOpaqueOnly, FNoOpaqueOnly, FUseOpaqueDepthSnapshot, FWriteOverdraw>;
     SHADER_USE_PARAMETER_STRUCT(FTrianglePS, FGlobalShader);
 
     static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
     {
+        // AverageDepth + Coverage together is the fused single-rasterization path: coverage goes to
+        // SV_Target1 and average depth to SV_Target2 (matching the render target binding order in the
+        // direct background draw).
         const FPermutationDomain PermutationVector(Parameters.PermutationId);
-        return !(PermutationVector.Get<FWriteSplatAverageDepth>() && PermutationVector.Get<FWriteSplatCoverage>());
+        if (PermutationVector.Get<FHybridOpaqueOnly>() && PermutationVector.Get<FNoOpaqueOnly>())
+        {
+            return false;
+        }
+        // The overdraw permutation is a lone debug variant: never combined with the coverage/depth
+        // outputs, the stage gates, or the snapshot path — so it costs exactly one extra permutation.
+        if (PermutationVector.Get<FWriteOverdraw>() &&
+            (PermutationVector.Get<FWriteSplatAverageDepth>() ||
+             PermutationVector.Get<FWriteSplatCoverage>() ||
+             PermutationVector.Get<FHybridOpaqueOnly>() ||
+             PermutationVector.Get<FNoOpaqueOnly>() ||
+             PermutationVector.Get<FUseOpaqueDepthSnapshot>()))
+        {
+            return false;
+        }
+        return true;
     }
 
     static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
@@ -515,6 +473,10 @@ public:
         const FPermutationDomain PermutationVector(Parameters.PermutationId);
         OutEnvironment.SetDefine(TEXT("WRITE_SPLAT_AVERAGE_DEPTH"), PermutationVector.Get<FWriteSplatAverageDepth>() ? 1 : 0);
         OutEnvironment.SetDefine(TEXT("WRITE_SPLAT_COVERAGE"), PermutationVector.Get<FWriteSplatCoverage>() ? 1 : 0);
+        OutEnvironment.SetDefine(TEXT("HYBRID_OPAQUE_ONLY"), PermutationVector.Get<FHybridOpaqueOnly>() ? 1 : 0);
+        OutEnvironment.SetDefine(TEXT("NO_OPAQUE_ONLY"), PermutationVector.Get<FNoOpaqueOnly>() ? 1 : 0);
+        OutEnvironment.SetDefine(TEXT("TRIANGLE_USE_OPAQUE_DEPTH_SNAPSHOT"), PermutationVector.Get<FUseOpaqueDepthSnapshot>() ? 1 : 0);
+        OutEnvironment.SetDefine(TEXT("WRITE_OVERDRAW"), PermutationVector.Get<FWriteOverdraw>() ? 1 : 0);
     }
 };
 
@@ -527,10 +489,14 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeAfterDOFPassParams, )
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeBackgroundSplatsInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, BackgroundDepthInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeOutput)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeOpaqueSceneDepthInput)
     SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float4>, EyeAdaptationBuffer)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeSceneColorTexture)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeBackgroundSplatsTexture)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, BackgroundDepthTexture)
+    SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeOpaqueSceneDepthTexture)
+    SHADER_PARAMETER_SAMPLER(SamplerState, ComposeOpaqueSceneDepthPointClampSampler)
+    SHADER_PARAMETER(uint32, ComposeUseOpaqueDepthSnapshot)
     SHADER_PARAMETER_RDG_TEXTURE(Texture3D, LumBilateralGrid)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, BlurredLogLum)
     SHADER_PARAMETER_SAMPLER(SamplerState, ComposeLinearClampSampler)
@@ -552,6 +518,9 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeAfterDOFPassParams, )
     SHADER_PARAMETER(float, InverseTonemapScale)
     SHADER_PARAMETER(float, InverseTonemapGamma)
     SHADER_PARAMETER(float, InverseTonemapSaturationScale)
+    SHADER_PARAMETER(float, DirectDrawColorGamma)
+    SHADER_PARAMETER(float, DirectDrawColorMultiplier)
+    SHADER_PARAMETER(uint32, DirectDrawDisableColorClamp)
     SHADER_PARAMETER(float, FilmSlope)
     SHADER_PARAMETER(float, FilmToe)
     SHADER_PARAMETER(float, FilmShoulder)
@@ -561,6 +530,8 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeAfterDOFPassParams, )
     SHADER_PARAMETER(uint32, ComposeUseBackgroundDepthTexture)
     SHADER_PARAMETER(uint32, ComposePointSampleBackgroundProxy)
     SHADER_PARAMETER(uint32, ComposeDebugViewMode)
+    // R1 proxy hybrid: when 1, the compose skips compositing the proxy splats over opaque-UE-geometry pixels.
+    SHADER_PARAMETER(uint32, ComposeProxyHybridSkipOpaque)
     RENDER_TARGET_BINDING_SLOTS()
 END_SHADER_PARAMETER_STRUCT()
 
@@ -663,11 +634,20 @@ class FHarmonyWriteBackgroundSceneDepthPS : public FGlobalShader
 public:
     DECLARE_GLOBAL_SHADER(FHarmonyWriteBackgroundSceneDepthPS);
     using FParameters = FHarmonyWriteBackgroundSceneDepthPassParams;
+    class FNoOpaqueOnly : SHADER_PERMUTATION_BOOL("BACKGROUND_DEPTH_NO_OPAQUE_ONLY");
+    using FPermutationDomain = TShaderPermutationDomain<FNoOpaqueOnly>;
     SHADER_USE_PARAMETER_STRUCT(FHarmonyWriteBackgroundSceneDepthPS, FGlobalShader);
 
     static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
     {
         return true;
+    }
+
+    static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
+    {
+        FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+        const FPermutationDomain PermutationVector(Parameters.PermutationId);
+        OutEnvironment.SetDefine(TEXT("BACKGROUND_DEPTH_NO_OPAQUE_ONLY"), PermutationVector.Get<FNoOpaqueOnly>() ? 1 : 0);
     }
 };
 
@@ -765,6 +745,75 @@ public:
     }
 };
 
+BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyBuildOpaquePresenceRectPassParams, )
+    SHADER_PARAMETER_STRUCT_REF(FViewUniformShaderParameters, View)
+    SHADER_PARAMETER_RDG_UNIFORM_BUFFER(FSceneTextureUniformParameters, SceneTexturesStruct)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeSceneInput)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, OpaqueSceneDepthInput)
+    SHADER_PARAMETER_RDG_TEXTURE(Texture2D, OpaqueSceneDepthTexture)
+    SHADER_PARAMETER_SAMPLER(SamplerState, OpaqueSceneDepthPointClampSampler)
+    SHADER_PARAMETER(uint32, OutputViewportWidth)
+    SHADER_PARAMETER(uint32, OutputViewportHeight)
+    SHADER_PARAMETER(float, OpaquePresenceDepthDistance)
+    SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<uint>, RWBackgroundAmbiguityRect)
+END_SHADER_PARAMETER_STRUCT()
+
+// Builds the bounding rect of pixels that pass the HYBRID_OPAQUE_ONLY opaque-presence gate. The depth
+// source permutation must match the FUseOpaqueDepthSnapshot permutation of the draw it culls: snapshot
+// when the opaque depth snapshot exists (depth-write path), live scene depth otherwise. Feeds the rect
+// reject of the deferred opaque-overlap direct draw so splats that cannot touch opaque pixels are
+// collapsed in the vertex shader.
+class FHarmonyBuildOpaquePresenceRectCS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FHarmonyBuildOpaquePresenceRectCS);
+    using FParameters = FHarmonyBuildOpaquePresenceRectPassParams;
+    class FUseOpaqueDepthSnapshot : SHADER_PERMUTATION_BOOL("OPAQUE_PRESENCE_RECT_USE_SNAPSHOT");
+    using FPermutationDomain = TShaderPermutationDomain<FUseOpaqueDepthSnapshot>;
+    SHADER_USE_PARAMETER_STRUCT(FHarmonyBuildOpaquePresenceRectCS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+    {
+        return true;
+    }
+
+    static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
+    {
+        FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+        const FPermutationDomain PermutationVector(Parameters.PermutationId);
+        OutEnvironment.SetDefine(TEXT("OPAQUE_PRESENCE_RECT_USE_SNAPSHOT"), PermutationVector.Get<FUseOpaqueDepthSnapshot>() ? 1 : 0);
+    }
+};
+
+BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyBuildOpaqueTileMaskPassParams, )
+    SHADER_PARAMETER_STRUCT_REF(FViewUniformShaderParameters, View)
+    SHADER_PARAMETER_RDG_UNIFORM_BUFFER(FSceneTextureUniformParameters, SceneTexturesStruct)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeSceneInput)
+    SHADER_PARAMETER(uint32, OutputViewportWidth)
+    SHADER_PARAMETER(uint32, OutputViewportHeight)
+    SHADER_PARAMETER(uint32, TileMaskTilesX)
+    SHADER_PARAMETER(uint32, TileMaskTilesY)
+    SHADER_PARAMETER(float, OpaquePresenceDepthDistance)
+    SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<uint>, RWOpaqueTileMask)
+END_SHADER_PARAMETER_STRUCT()
+
+// Classifies 16x16-pixel screen tiles against the opaque-presence gate (bit0 = tile contains an
+// opaque pixel, bit1 = tile contains a non-opaque pixel). Built at post-opaque from pristine scene
+// depth, so it matches both the early NO_OPAQUE_ONLY gate (live depth at that point) and the
+// deferred HYBRID_OPAQUE_ONLY gate when it reads the opaque depth snapshot (same content).
+class FHarmonyBuildOpaqueTileMaskCS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FHarmonyBuildOpaqueTileMaskCS);
+    using FParameters = FHarmonyBuildOpaqueTileMaskPassParams;
+    SHADER_USE_PARAMETER_STRUCT(FHarmonyBuildOpaqueTileMaskCS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+    {
+        return true;
+    }
+};
+
 BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeSceneCoverageMaskPassParams, )
     SHADER_PARAMETER_STRUCT_REF(FViewUniformShaderParameters, View)
     SHADER_PARAMETER_RDG_UNIFORM_BUFFER(FSceneTextureUniformParameters, SceneTexturesStruct)
@@ -774,6 +823,7 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeSceneCoverageMaskPassParams, )
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, BackgroundDepthInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, BackgroundDirectCoverageInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, BackgroundAmbiguityResolveInput)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeOpaqueSceneDepthInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeOutput)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeSeparateTranslucencyTexture)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeSeparateTranslucencyModulateTexture)
@@ -782,16 +832,20 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeSceneCoverageMaskPassParams, )
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, BackgroundDepthTexture)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, BackgroundDirectCoverageTexture)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, BackgroundAmbiguityResolveTexture)
+    SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeOpaqueSceneDepthTexture)
     SHADER_PARAMETER_SAMPLER(SamplerState, ComposeLinearClampSampler)
     SHADER_PARAMETER_SAMPLER(SamplerState, ComposeSceneCoverageHistorySampler)
     SHADER_PARAMETER_SAMPLER(SamplerState, BackgroundDepthPointClampSampler)
     SHADER_PARAMETER_SAMPLER(SamplerState, BackgroundDirectCoveragePointClampSampler)
     SHADER_PARAMETER_SAMPLER(SamplerState, BackgroundAmbiguityResolvePointClampSampler)
+    SHADER_PARAMETER_SAMPLER(SamplerState, ComposeOpaqueSceneDepthPointClampSampler)
     SHADER_PARAMETER(float, ComposeOpaqueDepthDistance)
     SHADER_PARAMETER(float, ComposeTransparentPow)
     SHADER_PARAMETER(float, BackgroundDepthCoverageThreshold)
     SHADER_PARAMETER(float, ComposeBackgroundDepthBias)
     SHADER_PARAMETER(float, ComposeBackgroundDepthFeather)
+    SHADER_PARAMETER(float, ComposeProxyCoverageOpaqueDepthDistance)
+    SHADER_PARAMETER(uint32, ComposeProxyCoverageNoOpaqueOnly)
     SHADER_PARAMETER(uint32, ComposeMaskCrossBlur)
     SHADER_PARAMETER(float, ComposeMaskCrossBlurPx)
     SHADER_PARAMETER(uint32, ComposeEnableSceneCoverageTemporalHistory)
@@ -808,6 +862,40 @@ public:
     using FParameters = FHarmonyComposeSceneCoverageMaskPassParams;
     SHADER_USE_PARAMETER_STRUCT(FHarmonyComposeSceneCoverageMaskPS, FGlobalShader);
 
+    class FUseOpaqueDepthSnapshot : SHADER_PERMUTATION_BOOL("COMPOSE_COVERAGE_USE_OPAQUE_DEPTH_SNAPSHOT");
+    using FPermutationDomain = TShaderPermutationDomain<FUseOpaqueDepthSnapshot>;
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+    {
+        return true;
+    }
+
+    static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
+    {
+        FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+        const FPermutationDomain PermutationVector(Parameters.PermutationId);
+        OutEnvironment.SetDefine(
+            TEXT("COMPOSE_COVERAGE_USE_OPAQUE_DEPTH_SNAPSHOT"),
+            PermutationVector.Get<FUseOpaqueDepthSnapshot>() ? 1 : 0);
+    }
+};
+
+BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyVisualizeSplatOverdrawPassParams, )
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeSceneInput)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, SplatOverdrawCounterInput)
+    SHADER_PARAMETER_RDG_TEXTURE(Texture2D, SplatOverdrawCounterTexture)
+    SHADER_PARAMETER_SAMPLER(SamplerState, SplatOverdrawCounterSampler)
+    SHADER_PARAMETER(float, SplatOverdrawHeatmapMax)
+    RENDER_TARGET_BINDING_SLOTS()
+END_SHADER_PARAMETER_STRUCT()
+
+class FHarmonyVisualizeSplatOverdrawPS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FHarmonyVisualizeSplatOverdrawPS);
+    using FParameters = FHarmonyVisualizeSplatOverdrawPassParams;
+    SHADER_USE_PARAMETER_STRUCT(FHarmonyVisualizeSplatOverdrawPS, FGlobalShader);
+
     static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
     {
         return true;
@@ -817,13 +905,9 @@ public:
 BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyBuildAutoExposureMeterMaskPassParams, )
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, Output)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, BackgroundSplats)
-    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ForegroundSplats)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, BackgroundSplatsTexture)
-    SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ForegroundSplatsTexture)
     SHADER_PARAMETER_SAMPLER(SamplerState, LinearClampSampler)
     SHADER_PARAMETER(uint32, BackgroundCoverageInRed)
-    SHADER_PARAMETER(uint32, ForegroundCoverageInRed)
-    SHADER_PARAMETER(uint32, HasForegroundSplats)
     RENDER_TARGET_BINDING_SLOTS()
 END_SHADER_PARAMETER_STRUCT()
 
@@ -847,7 +931,6 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeExtendedTonemapperPassParams, )
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeSceneInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeBloomInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeSeparateTranslucencyInput)
-    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeForegroundSplatsInput)
     SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeOutput)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeSceneColorTexture)
     SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposePreserveSceneColorTexture)
@@ -855,7 +938,6 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeExtendedTonemapperPassParams, )
 	SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeBloomTexture)
 	SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeSeparateTranslucencyTexture)
 	SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeSceneCoverageMaskTexture)
-	SHADER_PARAMETER_RDG_TEXTURE(Texture2D, ComposeForegroundSplatsTexture)
 	SHADER_PARAMETER_SAMPLER(SamplerState, ComposeLinearClampSampler)
     SHADER_PARAMETER_SAMPLER(SamplerState, ComposeColorGradingLUTSampler)
 	SHADER_PARAMETER(FVector3f, ComposeSceneColorTint)
@@ -887,7 +969,7 @@ BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeExtendedTonemapperPassParams, )
     SHADER_PARAMETER(uint32, ComposeEnableBloom)
     SHADER_PARAMETER(uint32, ComposeEnableSceneTint)
     SHADER_PARAMETER(uint32, ComposeEnablePreExposure)
-    SHADER_PARAMETER(uint32, ComposeUseForegroundSplatsTexture)
+    SHADER_PARAMETER(uint32, ComposeApplyExposureToPreserved)
     SHADER_PARAMETER(uint32, ComposeUseNativeColorGradingLUT)
     SHADER_PARAMETER(uint32, ComposeTonemapperOutputDevice)
     SHADER_PARAMETER(uint32, ComposeTonemapperOutputGamut)

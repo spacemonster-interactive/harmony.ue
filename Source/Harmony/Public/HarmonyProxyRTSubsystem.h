@@ -37,8 +37,4 @@ public:
     /** Live runtime render target storing visible direct background splat coverage for the custom tonemap mask. Managed by FHarmonyViewExtension. */
     UPROPERTY(Transient, VisibleAnywhere, Category="Layers", meta=(DisplayName="Background Direct Coverage RT", ToolTip="Live runtime render target storing visible direct background splat coverage for tonemap masking when Proxy RTs are disabled. Updated automatically when the custom tonemapper needs direct background coverage."))
     TObjectPtr<UTextureRenderTarget2D> BackgroundDirectCoverage;
-
-    /** Live runtime render target used for foreground-splat composition. Managed by FHarmonyViewExtension. */
-    UPROPERTY(Transient, VisibleAnywhere, Category="Layers", meta=(DisplayName="Foreground Proxy RT", ToolTip="Live runtime render target for foreground-splat composition. Updated automatically when Proxy RTs are enabled."))
-    TObjectPtr<UTextureRenderTarget2D> ForegroundSplats;
 };
