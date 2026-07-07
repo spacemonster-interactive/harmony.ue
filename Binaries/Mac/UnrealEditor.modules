@@ -4,6 +4,6 @@
 	{
 		"Harmony": "libUnrealEditor-Harmony.dylib",
 		"HarmonyEditor": "libUnrealEditor-HarmonyEditor.dylib",
-		"HarmonyShaders": "libUnrealEditor-HarmonyShaders-0001.dylib"
+		"HarmonyShaders": "libUnrealEditor-HarmonyShaders.dylib"
 	}
 }
