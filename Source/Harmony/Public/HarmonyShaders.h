@@ -436,11 +436,14 @@ public:
     // pre-translucency direct draw only fills the no-opaque region.
     class FNoOpaqueOnly : SHADER_PERMUTATION_BOOL("NO_OPAQUE_ONLY");
     class FUseOpaqueDepthSnapshot : SHADER_PERMUTATION_BOOL("TRIANGLE_USE_OPAQUE_DEPTH_SNAPSHOT");
+    class FEnableOpaqueDepthReject : SHADER_PERMUTATION_BOOL("ENABLE_OPAQUE_DEPTH_REJECT");
+    class FUseStageStencilGate : SHADER_PERMUTATION_BOOL("STAGE_STENCIL_GATE");
+    class FHasFragmentVolumes : SHADER_PERMUTATION_BOOL("HAS_FRAGMENT_VOLUMES");
     // Debug: emit 1.0 per surviving (blending) fragment with additive blend into a counter target for
     // the splat-overdraw heatmap visualization. Shares all VS/discard logic with the normal draw; only
     // the output line differs. Compiled standalone (all other flags off) so it adds just one permutation.
     class FWriteOverdraw : SHADER_PERMUTATION_BOOL("WRITE_OVERDRAW");
-    using FPermutationDomain = TShaderPermutationDomain<FWriteSplatAverageDepth, FWriteSplatCoverage, FHybridOpaqueOnly, FNoOpaqueOnly, FUseOpaqueDepthSnapshot, FWriteOverdraw>;
+    using FPermutationDomain = TShaderPermutationDomain<FWriteSplatAverageDepth, FWriteSplatCoverage, FHybridOpaqueOnly, FNoOpaqueOnly, FUseOpaqueDepthSnapshot, FEnableOpaqueDepthReject, FUseStageStencilGate, FHasFragmentVolumes, FWriteOverdraw>;
     SHADER_USE_PARAMETER_STRUCT(FTrianglePS, FGlobalShader);
 
     static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
@@ -454,13 +457,15 @@ public:
             return false;
         }
         // The overdraw permutation is a lone debug variant: never combined with the coverage/depth
-        // outputs, the stage gates, or the snapshot path — so it costs exactly one extra permutation.
+        // outputs, the stage gates, or the snapshot path. It may combine with opaque depth reject so the
+        // heatmap can count the same surviving fragments as the active direct draw.
         if (PermutationVector.Get<FWriteOverdraw>() &&
             (PermutationVector.Get<FWriteSplatAverageDepth>() ||
              PermutationVector.Get<FWriteSplatCoverage>() ||
              PermutationVector.Get<FHybridOpaqueOnly>() ||
              PermutationVector.Get<FNoOpaqueOnly>() ||
-             PermutationVector.Get<FUseOpaqueDepthSnapshot>()))
+             PermutationVector.Get<FUseOpaqueDepthSnapshot>() ||
+             PermutationVector.Get<FUseStageStencilGate>()))
         {
             return false;
         }
@@ -476,6 +481,9 @@ public:
         OutEnvironment.SetDefine(TEXT("HYBRID_OPAQUE_ONLY"), PermutationVector.Get<FHybridOpaqueOnly>() ? 1 : 0);
         OutEnvironment.SetDefine(TEXT("NO_OPAQUE_ONLY"), PermutationVector.Get<FNoOpaqueOnly>() ? 1 : 0);
         OutEnvironment.SetDefine(TEXT("TRIANGLE_USE_OPAQUE_DEPTH_SNAPSHOT"), PermutationVector.Get<FUseOpaqueDepthSnapshot>() ? 1 : 0);
+        OutEnvironment.SetDefine(TEXT("ENABLE_OPAQUE_DEPTH_REJECT"), PermutationVector.Get<FEnableOpaqueDepthReject>() ? 1 : 0);
+        OutEnvironment.SetDefine(TEXT("STAGE_STENCIL_GATE"), PermutationVector.Get<FUseStageStencilGate>() ? 1 : 0);
+        OutEnvironment.SetDefine(TEXT("HAS_FRAGMENT_VOLUMES"), PermutationVector.Get<FHasFragmentVolumes>() ? 1 : 0);
         OutEnvironment.SetDefine(TEXT("WRITE_OVERDRAW"), PermutationVector.Get<FWriteOverdraw>() ? 1 : 0);
     }
 };
@@ -546,6 +554,7 @@ public:
     {
         return true;
     }
+
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyDownsampleSceneColorPassParams, )
@@ -567,6 +576,7 @@ public:
     {
         return true;
     }
+
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyNormalizeBackgroundAverageDepthPassParams, )
@@ -589,6 +599,7 @@ public:
     {
         return true;
     }
+
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyComposeProxyTexturePassParams, )
@@ -648,6 +659,40 @@ public:
         FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
         const FPermutationDomain PermutationVector(Parameters.PermutationId);
         OutEnvironment.SetDefine(TEXT("BACKGROUND_DEPTH_NO_OPAQUE_ONLY"), PermutationVector.Get<FNoOpaqueOnly>() ? 1 : 0);
+    }
+};
+
+BEGIN_SHADER_PARAMETER_STRUCT(FHarmonyWriteOpaquePresenceStencilPassParams, )
+    SHADER_PARAMETER_STRUCT_REF(FViewUniformShaderParameters, View)
+    SHADER_PARAMETER_RDG_UNIFORM_BUFFER(FSceneTextureUniformParameters, SceneTexturesStruct)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeSceneInput)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, ComposeOutput)
+    SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, OpaqueSceneDepthInput)
+    SHADER_PARAMETER_RDG_TEXTURE(Texture2D, OpaqueSceneDepthTexture)
+    SHADER_PARAMETER_SAMPLER(SamplerState, OpaqueSceneDepthPointClampSampler)
+    SHADER_PARAMETER(float, OpaquePresenceDepthDistance)
+    RENDER_TARGET_BINDING_SLOTS()
+END_SHADER_PARAMETER_STRUCT()
+
+class FHarmonyWriteOpaquePresenceStencilPS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FHarmonyWriteOpaquePresenceStencilPS);
+    using FParameters = FHarmonyWriteOpaquePresenceStencilPassParams;
+    class FUseOpaqueDepthSnapshot : SHADER_PERMUTATION_BOOL("TRIANGLE_USE_OPAQUE_DEPTH_SNAPSHOT");
+    using FPermutationDomain = TShaderPermutationDomain<FUseOpaqueDepthSnapshot>;
+    SHADER_USE_PARAMETER_STRUCT(FHarmonyWriteOpaquePresenceStencilPS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+    {
+        return true;
+    }
+
+    static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
+    {
+        FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+        const FPermutationDomain PermutationVector(Parameters.PermutationId);
+        OutEnvironment.SetDefine(TEXT("TRIANGLE_USE_OPAQUE_DEPTH_SNAPSHOT"), PermutationVector.Get<FUseOpaqueDepthSnapshot>() ? 1 : 0);
     }
 };
 
