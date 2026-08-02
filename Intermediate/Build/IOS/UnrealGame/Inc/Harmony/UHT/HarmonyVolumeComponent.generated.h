@@ -22,7 +22,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 struct Z_Construct_UClass_UHarmonyVolumeComponent_Statics;
 HARMONY_API UClass* Z_Construct_UClass_UHarmonyVolumeComponent(ETypeConstructPhase);
 
-#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_INCLASS_NO_PURE_DECLS \
+#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_INCLASS_NO_PURE_DECLS \
 private: \
 	friend struct ::Z_Construct_UClass_UHarmonyVolumeComponent_Statics; \
 	friend HARMONY_API UClass* ::Z_Construct_UClass_UHarmonyVolumeComponent(ETypeConstructPhase); \
@@ -31,7 +31,7 @@ public: \
 	DECLARE_SERIALIZER(UHarmonyVolumeComponent)
 
 
-#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_ENHANCED_CONSTRUCTORS \
+#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_ENHANCED_CONSTRUCTORS \
 	/** Deleted move- and copy-constructors, should never be used */ \
 	UHarmonyVolumeComponent(UHarmonyVolumeComponent&&) = delete; \
 	UHarmonyVolumeComponent(const UHarmonyVolumeComponent&) = delete; \
@@ -41,12 +41,12 @@ public: \
 	NO_API virtual ~UHarmonyVolumeComponent();
 
 
-#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_43_PROLOG
-#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_GENERATED_BODY \
+#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_43_PROLOG
+#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_INCLASS_NO_PURE_DECLS \
-	FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_ENHANCED_CONSTRUCTORS \
+	FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_INCLASS_NO_PURE_DECLS \
+	FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h_46_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
@@ -56,7 +56,7 @@ class UHarmonyVolumeComponent;
 // ********** End Class UHarmonyVolumeComponent ****************************************************
 
 #undef CURRENT_FILE_ID
-#define CURRENT_FILE_ID FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h
+#define CURRENT_FILE_ID FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonyVolumeComponent_h
 
 // ********** Begin Enum EHarmonyVolumeShape *******************************************************
 #define FOREACH_ENUM_EHARMONYVOLUMESHAPE(op) \

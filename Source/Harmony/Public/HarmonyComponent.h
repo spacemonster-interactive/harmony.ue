@@ -83,9 +83,10 @@ public:
     UPROPERTY(EditAnywhere, Category="Gaussian Splat", meta=(DisplayName="Depth Offset"))
     FHarmonyDepthOffsetSettings DepthOffsetSettings;
 
-    // Allows this component's background splats to contribute to Harmony's background depth estimate and SceneDepth write.
+    // Allows this component's background splats to contribute to Harmony's background depth estimate,
+    // SceneDepth, and the matching camera-relative scene velocity used for temporal reprojection.
     // This currently affects the main splat layer.
-    UPROPERTY(EditAnywhere, Category="Gaussian Splat", meta=(DisplayName="Write Depth To Scene"))
+    UPROPERTY(EditAnywhere, Category="Gaussian Splat", meta=(DisplayName="Write Depth To Scene", ToolTip="Write this component's representative splat depth after standard translucency, before depth-driven post effects such as DOF and TSR."))
     bool bWriteDepthToScene = true;
 
     virtual void OnRegister() override;

@@ -22,7 +22,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 struct Z_Construct_UClass_UHarmonySettings_Statics;
 HARMONY_API UClass* Z_Construct_UClass_UHarmonySettings(ETypeConstructPhase);
 
-#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_27_INCLASS_NO_PURE_DECLS \
+#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_35_INCLASS_NO_PURE_DECLS \
 private: \
 	friend struct ::Z_Construct_UClass_UHarmonySettings_Statics; \
 	friend HARMONY_API UClass* ::Z_Construct_UClass_UHarmonySettings(ETypeConstructPhase); \
@@ -33,7 +33,7 @@ public: \
 
 
 
-#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_27_ENHANCED_CONSTRUCTORS \
+#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_35_ENHANCED_CONSTRUCTORS \
 	/** Standard constructor, called after all reflected properties have been initialized */ \
 	NO_API UHarmonySettings(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get()); \
 	/** Deleted move- and copy-constructors, should never be used */ \
@@ -45,12 +45,12 @@ public: \
 	NO_API virtual ~UHarmonySettings();
 
 
-#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_24_PROLOG
-#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_27_GENERATED_BODY \
+#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_32_PROLOG
+#define FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_35_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_27_INCLASS_NO_PURE_DECLS \
-	FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_27_ENHANCED_CONSTRUCTORS \
+	FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_35_INCLASS_NO_PURE_DECLS \
+	FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h_35_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
@@ -60,7 +60,7 @@ class UHarmonySettings;
 // ********** End Class UHarmonySettings ***********************************************************
 
 #undef CURRENT_FILE_ID
-#define CURRENT_FILE_ID FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260707014027_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h
+#define CURRENT_FILE_ID FID_peteshand_p4_8000_GsDemo_Unreal_Saved_PrecompiledPluginBuild_Harmony_IOS_20260802065047_Package_HostProject_Plugins_Harmony_Source_Harmony_Public_HarmonySettings_h
 
 // ********** Begin Enum EHarmonyTonemapMaskMode ***************************************************
 #define FOREACH_ENUM_EHARMONYTONEMAPMASKMODE(op) \
@@ -83,5 +83,16 @@ enum class EHarmonyTonemappingMode : uint8;
 template<> struct TIsUEnumClass<EHarmonyTonemappingMode> { enum { Value = true }; };
 template<> UE_NODEBUG HARMONY_NON_ATTRIBUTED_API UEnum* StaticEnum<EHarmonyTonemappingMode>();
 // ********** End Enum EHarmonyTonemappingMode *****************************************************
+
+// ********** Begin Enum EHarmonyTonemapCompensationMethod *****************************************
+#define FOREACH_ENUM_EHARMONYTONEMAPCOMPENSATIONMETHOD(op) \
+	op(EHarmonyTonemapCompensationMethod::Invalid) \
+	op(EHarmonyTonemapCompensationMethod::FixedACES) \
+	op(EHarmonyTonemapCompensationMethod::UEFilmCurve) 
+
+enum class EHarmonyTonemapCompensationMethod : uint8;
+template<> struct TIsUEnumClass<EHarmonyTonemapCompensationMethod> { enum { Value = true }; };
+template<> UE_NODEBUG HARMONY_NON_ATTRIBUTED_API UEnum* StaticEnum<EHarmonyTonemapCompensationMethod>();
+// ********** End Enum EHarmonyTonemapCompensationMethod *******************************************
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

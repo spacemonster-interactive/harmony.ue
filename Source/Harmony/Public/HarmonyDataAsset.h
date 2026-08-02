@@ -139,6 +139,14 @@ struct FHarmonyRawData
     UPROPERTY(VisibleAnywhere, Category = "Gaussian Splat|Debug")
     EHarmonyAssetEncoding Encoding = EHarmonyAssetEncoding::Expanded;
 
+    // Path of the asset this was decimated from, empty if not decimated.
+    UPROPERTY(VisibleAnywhere, Category = "Gaussian Splat|Debug")
+    FString SourceAssetPath;
+
+    // 1.0 = not decimated; otherwise the target keep-ratio passed to the decimate action.
+    UPROPERTY(VisibleAnywhere, Category = "Gaussian Splat|Debug")
+    float DecimationTargetRatio = 1.0f;
+
     UPROPERTY(VisibleAnywhere, Category = "Gaussian Splat|Packed")
     float UnitScale = 100.0f;
 
@@ -374,6 +382,8 @@ struct FHarmonyRawData
         BoundsMax = FVector3f::ZeroVector;
         EstimatedSerializedSizeMB = 0.0f;
         Encoding = EHarmonyAssetEncoding::Expanded;
+        SourceAssetPath.Empty();
+        DecimationTargetRatio = 1.0f;
         UnitScale = 100.0f;
         PosRadius.Reset();
         Color.Reset();
